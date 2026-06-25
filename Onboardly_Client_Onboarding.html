@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboardly • Client Onboarding System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .client-card { transition: all 0.2s ease; }
+        .status-new { background-color: #334155; color: #94a3b8; }
+        .status-progress { background-color: #1e40af; color: #bfdbfe; }
+        .status-done { background-color: #166534; color: #bbf7d0; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <!-- Header -->
+    <div class="bg-slate-900 border-b border-slate-800 px-5 py-5 sticky top-0 z-50">
+        <div class="max-w-2xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-user-plus text-white"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-2xl tracking-tighter">Onboardly</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-400">Built by</div>
+                <div class="text-emerald-400 font-semibold text-sm">Hana</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-5 pt-6 pb-10">
+        
+        <!-- Add New Client -->
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-8">
+            <h2 class="font-semibold mb-4 flex items-center gap-x-2">
+                <i class="fa-solid fa-plus text-emerald-400"></i>
+                <span>Add New Client</span>
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Client Name</label>
+                        <input id="clientName" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm" placeholder="Alex Rivera">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Email</label>
+                        <input id="clientEmail" type="email" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm" placeholder="alex@business.com">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Niche / Industry</label>
+                        <input id="clientNiche" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm" placeholder="Specialty Coffee">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1">Start Date</label>
+                        <input id="startDate" type="date" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">Notes</label>
+                    <textarea id="clientNotes" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm" placeholder="Key goals or important details..."></textarea>
+                </div>
+                
+                <button onclick="addClient()" 
+                        class="w-full bg-emerald-500 hover:bg-emerald-600 py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-x-2">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Add Client & Start Onboarding</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Clients -->
+        <div>
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="font-semibold">Active Clients</div>
+                <div id="clientCount" class="text-xs text-emerald-400"></div>
+            </div>
+            
+            <div id="clientsList" class="space-y-4"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let clients = JSON.parse(localStorage.getItem('onboardly_clients')) || [];
+
+        function saveClients() {
+            localStorage.setItem('onboardly_clients', JSON.stringify(clients));
+        }
+
+        function renderClients() {
+            const container = document.getElementById('clientsList');
+            container.innerHTML = '';
+            
+            if (clients.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-sm">
+                        No clients yet. Add your first one above.
+                    </div>
+                `;
+                document.getElementById('clientCount').innerHTML = '0 clients';
+                return;
+            }
+
+            clients.forEach((client, index) => {
+                const statusClass = client.status === 'New' ? 'status-new' : 
+                                   client.status === 'In Progress' ? 'status-progress' : 'status-done';
+
+                const card = document.createElement('div');
+                card.className = `client-card bg-slate-900 border border-slate-800 rounded-3xl p-5`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <div class="font-semibold">${client.name}</div>
+                            <div class="text-xs text-slate-400">${client.niche} • ${client.startDate}</div>
+                        </div>
+                        <div class="flex items-center gap-x-2">
+                            <span class="text-xs px-3 py-1 rounded-full ${statusClass}">${client.status}</span>
+                            <button onclick="deleteClient(${index})" class="text-slate-400 hover:text-red-400 p-1">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-slate-400 mb-3">${client.email}</div>
+                    
+                    ${client.notes ? `<div class="text-xs bg-slate-950 p-3 rounded-2xl mb-4">${client.notes}</div>` : ''}
+                    
+                    <div class="flex gap-2">
+                        <select onchange="updateStatus(${index}, this.value)" class="text-xs bg-slate-950 border border-slate-700 rounded-2xl px-3 py-1 flex-1">
+                            <option value="New" ${client.status === 'New' ? 'selected' : ''}>New</option>
+                            <option value="In Progress" ${client.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="Completed" ${client.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                        
+                        <button onclick="showChecklist(${index})" 
+                                class="text-xs px-4 py-1 bg-slate-800 hover:bg-slate-700 rounded-2xl flex items-center gap-x-1">
+                            <i class="fa-solid fa-tasks"></i>
+                            <span>Checklist</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            document.getElementById('clientCount').innerHTML = `${clients.length} clients`;
+        }
+
+        function addClient() {
+            const name = document.getElementById('clientName').value.trim();
+            const email = document.getElementById('clientEmail').value.trim();
+            const niche = document.getElementById('clientNiche').value.trim();
+            const startDate = document.getElementById('startDate').value;
+            const notes = document.getElementById('clientNotes').value.trim();
+
+            if (!name || !email) {
+                alert("Please fill at least Name and Email");
+                return;
+            }
+
+            clients.push({
+                name: name,
+                email: email,
+                niche: niche || "General",
+                startDate: startDate || new Date().toISOString().split('T')[0],
+                notes: notes,
+                status: "New",
+                checklist: [
+                    { task: "Send welcome email + onboarding packet", done: false },
+                    { task: "Schedule kickoff call", done: false },
+                    { task: "Set up access & tools", done: false },
+                    { task: "Create project folder & shared doc", done: false },
+                    { task: "First milestone review", done: false }
+                ]
+            });
+
+            saveClients();
+            renderClients();
+
+            // Clear form
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientEmail').value = '';
+            document.getElementById('clientNiche').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('clientNotes').value = '';
+        }
+
+        function updateStatus(index, newStatus) {
+            clients[index].status = newStatus;
+            saveClients();
+            renderClients();
+        }
+
+        function showChecklist(index) {
+            const client = clients[index];
+            let html = `<div class="fixed inset-0 bg-black/70 flex items-end justify-center z-[100]">
+                <div class="bg-slate-900 w-full max-w-2xl rounded-t-3xl p-6">
+                    <div class="flex justify-between mb-4">
+                        <div class="font-semibold">${client.name} - Onboarding Checklist</div>
+                        <button onclick="closeModal(this)" class="text-2xl text-slate-400">×</button>
+                    </div>
+                    
+                    <div class="space-y-3">`;
+
+            client.checklist.forEach((item, i) => {
+                html += `
+                    <label class="flex items-center gap-x-3 bg-slate-950 p-4 rounded-2xl cursor-pointer">
+                        <input type="checkbox" ${item.done ? 'checked' : ''} 
+                               onchange="toggleChecklist(${index}, ${i}, this.checked)"
+                               class="w-5 h-5 accent-emerald-500">
+                        <span class="${item.done ? 'line-through text-slate-400' : ''}">${item.task}</span>
+                    </label>
+                `;
+            });
+
+            html += `</div></div></div>`;
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function toggleChecklist(clientIndex, taskIndex, checked) {
+            clients[clientIndex].checklist[taskIndex].done = checked;
+            saveClients();
+            
+            // Refresh the modal content
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) modal.remove();
+            showChecklist(clientIndex);
+        }
+
+        function closeModal(element) {
+            element.closest('.fixed').remove();
+            renderClients(); // Refresh main list
+        }
+
+        function deleteClient(index) {
+            if (confirm('Delete this client?')) {
+                clients.splice(index, 1);
+                saveClients();
+                renderClients();
+            }
+        }
+
+        function init() {
+            renderClients();
+            
+            // Set default date to today
+            const dateInput = document.getElementById('startDate');
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
